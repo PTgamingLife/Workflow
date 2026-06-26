@@ -15,6 +15,7 @@ interface Props {
   onClear: () => void;
   onSave: () => void;
   onLoad: () => void;
+  onExportMarkdown: () => void;
 }
 
 const CATEGORIES: NodeCategory[] = ['trigger', 'input', 'process', 'ai', 'decision', 'output', 'storage', 'manual'];
@@ -22,7 +23,7 @@ const CATEGORIES: NodeCategory[] = ['trigger', 'input', 'process', 'ai', 'decisi
 export default function Toolbar({
   selectedCount, nodeCount, connectionCount,
   apiKey, onApiKeyChange,
-  onAddNode, onDeleteSelected, onAnalyze, onClear, onSave, onLoad,
+  onAddNode, onDeleteSelected, onAnalyze, onClear, onSave, onLoad, onExportMarkdown,
 }: Props) {
   const [showAdd, setShowAdd] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -119,9 +120,10 @@ export default function Toolbar({
 
       <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)' }} />
 
-      {/* Save / Load */}
+      {/* Save / Load / Export */}
       <button onClick={onSave} style={btnStyle('#64748b', 'rgba(100,116,139,0.15)')} title="儲存到瀏覽器">💾</button>
       <button onClick={onLoad} style={btnStyle('#64748b', 'rgba(100,116,139,0.15)')} title="從瀏覽器載入">📂</button>
+      <button onClick={onExportMarkdown} style={btnStyle('#0e7490', 'rgba(14,116,144,0.15)')} title="匯出 Markdown 檔案">📄 MD</button>
       <button onClick={() => { if (confirm('確定清空畫布？')) onClear(); }} style={btnStyle('#64748b', 'rgba(100,116,139,0.15)')} title="清空">⬜</button>
 
       <div style={{ width: 1, height: 28, background: 'rgba(255,255,255,0.1)' }} />

@@ -211,6 +211,96 @@ export default function Page() {
     } catch { alert('載入失敗，資料格式錯誤'); }
   }, []);
 
+  const handleExportMarkdown = useCallback(() => {
+    const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+    const portMap = new Map<string, string>();
+    nodes.forEach((n) => {
+      n.inputs.forEach((p) => portMap.set(p.id, p.name));
+      n.outputs.forEach((p) => portMap.set(p.id, p.name));
+    });
+
+    const categoryLabel: Record<string, string> = {
+      trigger: '觸發', input: '輸入', process: '處理', ai: 'AI',
+      decision: '判斷', output: '輸出', storage: '儲存', manual: '手動',
+    };
+
+    const lines: string[] = [];
+    const now = new Date().toLocaleString('zh-TW', { hour12: false });
+
+    lines.push(`# 工作流程文件`);
+    lines.push(`\n> 匯出時間：${now}　｜　節點：${nodes.length}　｜　連接：${connections.length}`);
+    lines.push('');
+
+    lines.push('## 流程圖');
+    lines.push('');
+    lines.push('```mermaid');
+    lines.push('flowchart LR');
+    nodes.forEach((n) => {
+      const label = n.title.replace(/"/g, "'");
+      lines.push(`  ${n.id}["${label}"]`);
+    });
+    connections.forEach((c) => {
+      const srcPort = portMap.get(c.sourcePortId) ?? '';
+      const tgtPort = portMap.get(c.targetPortId) ?? '';
+      const edgeLabel = srcPort && tgtPort ? `|${srcPort} → ${tgtPort}|` : '';
+      lines.push(`  ${c.sourceNodeId} -->${edgeLabel} ${c.targetNodeId}`);
+    });
+    lines.push('```');
+    lines.push('');
+
+    lines.push('## 節點詳情');
+    lines.push('');
+    nodes.forEach((n, i) => {
+      lines.push(`### ${i + 1}. ${n.title}`);
+      lines.push('');
+      lines.push(`| 欄位 | 內容 |`);
+      lines.push(`|------|------|`);
+      lines.push(`| 類別 | ${categoryLabel[n.category] ?? n.category} |`);
+      if (n.description) lines.push(`| 說明 | ${n.description.replace(/\n/g, ' ')} |`);
+      lines.push('');
+
+      if (n.inputs.length > 0) {
+        lines.push('**輸入埠**');
+        lines.push('');
+        lines.push('| 名稱 | 資料型態 | 說明 |');
+        lines.push('|------|----------|------|');
+        n.inputs.forEach((p) => lines.push(`| ${p.name} | \`${p.dataType}\` | ${p.description || '—'} |`));
+        lines.push('');
+      }
+
+      if (n.outputs.length > 0) {
+        lines.push('**輸出埠**');
+        lines.push('');
+        lines.push('| 名稱 | 資料型態 | 說明 |');
+        lines.push('|------|----------|------|');
+        n.outputs.forEach((p) => lines.push(`| ${p.name} | \`${p.dataType}\` | ${p.description || '—'} |`));
+        lines.push('');
+      }
+    });
+
+    lines.push('## 連接清單');
+    lines.push('');
+    lines.push('| 來源節點 | 輸出埠 | 目標節點 | 輸入埠 |');
+    lines.push('|----------|--------|----------|--------|');
+    connections.forEach((c) => {
+      const src = nodeMap.get(c.sourceNodeId)?.title ?? c.sourceNodeId;
+      const tgt = nodeMap.get(c.targetNodeId)?.title ?? c.targetNodeId;
+      const srcPort = portMap.get(c.sourcePortId) ?? c.sourcePortId;
+      const tgtPort = portMap.get(c.targetPortId) ?? c.targetPortId;
+      lines.push(`| ${src} | ${srcPort} | ${tgt} | ${tgtPort} |`);
+    });
+    lines.push('');
+
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `workflow-${Date.now()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [nodes, connections]);
+
   const editingNode = editingId ? nodes.find((n) => n.id === editingId) ?? null : null;
 
   return (
@@ -227,6 +317,7 @@ export default function Page() {
         onClear={() => { setNodes([]); setConnections([]); setSelectedIds(new Set()); setEditingId(null); }}
         onSave={handleSave}
         onLoad={handleLoad}
+        onExportMarkdown={handleExportMarkdown}
       />
 
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', minHeight: 0 }}>

@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { WorkflowNode, Connection, NodeCategory } from '@/types/workflow';
+import { analyzeWorkflow } from '@/lib/analyzeWorkflow';
 import WorkflowCanvas from '@/components/WorkflowCanvas';
 import NodeEditPanel from '@/components/NodeEditPanel';
 import AIPanel from '@/components/AIPanel';
@@ -179,14 +180,8 @@ export default function Page() {
     setIsAnalyzing(true);
     setAiContent('');
     try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ workflow: { nodes: selectedNodes, connections: relatedConns }, apiKey }),
-      });
-      const data = await res.json();
-      if (data.error) throw new Error(data.error);
-      setAiContent(data.result);
+      const result = await analyzeWorkflow(selectedNodes, relatedConns, apiKey);
+      setAiContent(result);
     } catch (err) {
       setAiContent(`**錯誤：** ${err instanceof Error ? err.message : '未知錯誤'}`);
     } finally {
